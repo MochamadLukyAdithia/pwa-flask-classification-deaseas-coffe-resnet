@@ -1,0 +1,45 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Jupyter / IPython
+.ipynb_checkpoints/
+
+# Model artifacts
+saved_model/
+*.h5
+*.ckpt
+*.tflite
+
+# Dataset (jika tidak mau di-track di git)
+dataset/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# Node.js (jika pakai untuk static frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build / dist
+dist/
+build/

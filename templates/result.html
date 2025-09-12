@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hasil Deteksi Penyakit Tanaman</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#2b7a78">
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <main class="min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white shadow-lg rounded-2xl p-8 max-w-lg w-full">
+      <h1 class="text-2xl font-bold text-teal-600 mb-6 text-center">📊 Hasil Deteksi</h1>
+
+      <div class="text-center mb-6">
+        {% if label %}
+          <p class="text-lg"><strong class="text-teal-700">Prediksi:</strong> {{ label }}</p>
+          <p class="text-gray-600"><strong>Akurasi:</strong> {{ "%.2f"|format(confidence * 100) }}%</p>
+        {% else %}
+          <p class="text-gray-500">⚠️ Data prediksi tidak tersedia.</p>
+        {% endif %}
+      </div>
+
+      {% if probabilities %}
+        <h3 class="text-lg font-semibold mb-3">Detail Probabilitas:</h3>
+        <ul class="space-y-2 text-sm">
+          {% for i, prob in enumerate(probabilities) %}
+            <li class="flex justify-between bg-gray-50 p-2 rounded-md border">
+              <span>Kelas {{ i }}</span>
+              <span class="font-medium text-teal-600">{{ "%.2f"|format(prob * 100) }}%</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="mt-8 text-center">
+        <a href="/" 
+           class="inline-block bg-teal-600 text-white py-2 px-6 rounded-lg shadow 
+                  hover:bg-teal-700 transition duration-200">
+          ⬅️ Kembali
+        </a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

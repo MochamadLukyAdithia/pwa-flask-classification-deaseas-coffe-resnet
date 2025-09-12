@@ -1,0 +1,7 @@
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f6f6f6; color:#222; padding:2rem;}
+.container { max-width:720px; margin:0 auto; background:white; padding:1.5rem; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06);}
+h1 { margin:0 0 0.5rem 0;}
+button { padding:0.6rem 1rem; border-radius:6px; border:none; background:#2b7a78; color:white; cursor:pointer;}
+input[type="file"] { margin-bottom: 1rem;}
+pre { background:#efefef; padding:1rem; border-radius:6px; }
+#msg { margin-top: 0.7rem; color:#555;}
