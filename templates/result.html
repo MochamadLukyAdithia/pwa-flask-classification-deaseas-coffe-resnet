@@ -26,10 +26,10 @@
       {% if probabilities %}
         <h3 class="text-lg font-semibold mb-3">Detail Probabilitas:</h3>
         <ul class="space-y-2 text-sm">
-          {% for i, prob in enumerate(probabilities) %}
+          {% for class_name, prob in probabilities.items() %}
             <li class="flex justify-between bg-gray-50 p-2 rounded-md border">
-              <span>Kelas {{ i }}</span>
-              <span class="font-medium text-teal-600">{{ "%.2f"|format(prob * 100) }}%</span>
+              <span>{{ class_name }}</span>
+              <span class="font-medium text-teal-600">{{ "%.2f"|format(prob) }}%</span>
             </li>
           {% endfor %}
         </ul>

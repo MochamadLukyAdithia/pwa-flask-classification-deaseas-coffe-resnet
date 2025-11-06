@@ -6,3 +6,6 @@ gunicorn==23.0.0
 flask-limiter==3.9.2
 Werkzeug==3.0.4
 python-multipart==0.0.9
+protobuf==5.28.3
+absl-py==2.1.0
+torch==2.5.1

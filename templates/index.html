@@ -9,39 +9,108 @@
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gradient-to-br from-teal-50 to-gray-100 text-gray-800">
   <main class="min-h-screen flex items-center justify-center p-6">
-    <div class="bg-white shadow-lg rounded-2xl p-8 max-w-lg w-full">
-      <h1 class="text-3xl font-bold text-teal-600 mb-4 text-center">🌱 Plant Disease Detector</h1>
-      <p class="text-gray-600 mb-6 text-center">Upload foto daun tanaman untuk mendeteksi penyakitnya.</p>
+    <div class="bg-white shadow-2xl rounded-3xl p-8 max-w-lg w-full border border-gray-100">
+      <h1 class="text-3xl font-bold text-teal-600 mb-2 text-center">🌱 Plant Disease Detector</h1>
+      <p class="text-gray-500 mb-6 text-center text-sm">Upload foto daun tanaman untuk mendeteksi penyakitnya.</p>
 
-      <form id="upload-form" class="space-y-4">
-        <input type="file" id="image" name="image" accept="image/*" 
-               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 
-                      file:rounded-full file:border-0 file:text-sm file:font-semibold
-                      file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" />
+      <!-- Image Preview Container -->
+      <div id="preview-container" class="hidden mb-6">
+        <div class="relative">
+          <img id="preview-image" src="" alt="Preview" 
+               class="w-full h-64 object-cover rounded-xl border-2 border-teal-100 shadow-md">
+          <button type="button" id="clear-preview" 
+                  class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 shadow-lg hover:bg-red-600 transition duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 text-center">Preview gambar yang akan dianalisis</p>
+      </div>
+
+      <form id="upload-form" action="/predict-page" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <div class="relative">
+          <input type="file" id="image" name="image" accept="image/*" required
+                 class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 
+                        file:rounded-full file:border-0 file:text-sm file:font-semibold
+                        file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 
+                        file:cursor-pointer file:transition file:duration-200" />
+        </div>
 
         <button id="submit-btn" type="submit" 
-                class="w-full bg-teal-600 text-white py-2 px-4 rounded-lg shadow 
-                       hover:bg-teal-700 transition duration-200">
+                class="w-full bg-teal-600 text-white py-3 px-4 rounded-xl shadow-lg 
+                       hover:bg-teal-700 hover:shadow-xl transition-all duration-200 
+                       font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none">
           🔍 Detect
         </button>
       </form>
 
-      <div id="result" hidden class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h3 class="text-lg font-semibold mb-2">Hasil</h3>
-        <pre id="result-json" class="text-sm text-gray-700"></pre>
-      </div>
-
-      <div id="msg" class="mt-4 text-center text-sm text-red-500"></div>
+      <div id="msg" class="mt-4 text-center text-sm"></div>
     </div>
   </main>
 
-  <script src="/static/js/app.js"></script>
   <script>
+    // ========== SERVICE WORKER ==========
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/static/sw.js').catch(err => console.warn("SW registration failed:", err));
     }
+
+    // ========== IMAGE PREVIEW ==========
+    const imageInput = document.getElementById('image');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const clearPreviewBtn = document.getElementById('clear-preview');
+    const submitBtn = document.getElementById('submit-btn');
+    const msgDiv = document.getElementById('msg');
+
+    // Disable submit button initially
+    submitBtn.disabled = true;
+
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      
+      if (file) {
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!validTypes.includes(file.type)) {
+          msgDiv.textContent = '⚠️ Hanya file JPG, JPEG, atau PNG yang diperbolehkan!';
+          msgDiv.className = 'mt-4 text-center text-sm text-red-500 font-semibold';
+          imageInput.value = '';
+          return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          msgDiv.textContent = '⚠️ Ukuran file maksimal 5MB!';
+          msgDiv.className = 'mt-4 text-center text-sm text-red-500 font-semibold';
+          imageInput.value = '';
+          return;
+        }
+
+        // Clear any previous error messages
+        msgDiv.textContent = '';
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          previewImage.src = event.target.result;
+          previewContainer.classList.remove('hidden');
+          submitBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Clear preview handler
+    clearPreviewBtn.addEventListener('click', function() {
+      imageInput.value = '';
+      previewImage.src = '';
+      previewContainer.classList.add('hidden');
+      submitBtn.disabled = true;
+      msgDiv.textContent = '';
+    });
   </script>
 </body>
 </html>

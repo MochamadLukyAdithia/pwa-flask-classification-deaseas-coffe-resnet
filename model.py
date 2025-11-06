@@ -1,46 +1,98 @@
-
 import os
-import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import models, transforms
 from PIL import Image
+import numpy as np
 from config import MODEL_PATH
 
 class PlantDiseaseModel:
     def __init__(self, model_path=None):
         model_path = model_path or MODEL_PATH
-        
-        if os.path.isdir(model_path):
-            try:
-                self.model = load_model(model_path)
-            except Exception:
-                
-                self.model = load_model(os.path.join(model_path, 'model.h5'))
-        elif os.path.isfile(model_path):
-            self.model = load_model(model_path)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # ==== Load model safely ====
+        print(f"[INFO] Loading model from: {model_path}")
+
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+
+        try:
+            checkpoint = torch.load(model_path, map_location=self.device)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load model file: {e}")
+
+        # Determine whether it's a state_dict or full model
+        if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
+            # If saved as a checkpoint dict
+            state_dict = checkpoint["state_dict"]
+        elif isinstance(checkpoint, dict):
+            # Plain state_dict
+            state_dict = checkpoint
         else:
-            raise ValueError(f"Model not found at {model_path}")
-        self.input_size = (224, 224)
-        
-        self.class_indices = None
+            # Entire model object was saved
+            print("[INFO] Detected a full model file. Loading directly.")
+            model = checkpoint
+            model.to(self.device)
+            model.eval()
+            self.model = model
+            self._setup_transform()
+            return
+
+        # ==== Build same model architecture ====
+        num_classes = 5  # 🔁 change if your training had more classes
+        model = models.resnet50(weights=None)
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+
+        # ==== Load weights ====
+        try:
+            model.load_state_dict(state_dict, strict=False)
+        except Exception as e:
+            raise RuntimeError(f"Error loading model weights: {e}")
+
+        model.to(self.device)
+        model.eval()
+        self.model = model
+
+        # ==== Prepare image transform ====
+        self._setup_transform()
+
+        # Class names (update if needed)
+        self.class_names = ['Miner', 'Cercospora', 'Phoma', 'Rust', 'Health']
+
+        print("[INFO] Model loaded and ready on", self.device)
+
+    def _setup_transform(self):
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406],
+                                 [0.229, 0.224, 0.225])
+        ])
 
     def preprocess_image(self, pil_image: Image.Image):
         pil_image = pil_image.convert("RGB")
-        pil_image = pil_image.resize(self.input_size)
-        arr = img_to_array(pil_image) / 255.0
-        arr = np.expand_dims(arr, axis=0)
-        return arr
+        return self.transform(pil_image).unsqueeze(0).to(self.device)
 
     def predict(self, pil_image: Image.Image):
         x = self.preprocess_image(pil_image)
-        probs = self.model.predict(x)[0]
-        top_idx = int(np.argmax(probs))
+        with torch.no_grad():
+            logits = self.model(x)
+            probs = F.softmax(logits, dim=1).cpu().numpy()[0]
+
+        top5_idx = np.argsort(probs)[::-1][:5]
+        top5_labels = [self.class_names[i] for i in top5_idx]
+        top5_probs = [float(probs[i]) for i in top5_idx]
+
         return {
-            "pred_index": top_idx,
-            "probabilities": probs.tolist()
+            "label": top5_labels[0],
+            "confidence": top5_probs[0],
+            "top5": dict(zip(top5_labels, [round(p * 100, 2) for p in top5_probs]))
         }
 
 
+# ==== Singleton pattern ====
 _model_instance = None
 
 def get_model():
