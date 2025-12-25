@@ -12,7 +12,7 @@ class PlantDiseaseModel:
         model_path = model_path or MODEL_PATH
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # ==== Load model safely ====
+        
         print(f"[INFO] Loading model from: {model_path}")
 
         if not os.path.exists(model_path):
@@ -23,15 +23,15 @@ class PlantDiseaseModel:
         except Exception as e:
             raise RuntimeError(f"Failed to load model file: {e}")
 
-        # Determine whether it's a state_dict or full model
+        
         if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
-            # If saved as a checkpoint dict
+            
             state_dict = checkpoint["state_dict"]
         elif isinstance(checkpoint, dict):
-            # Plain state_dict
+            
             state_dict = checkpoint
         else:
-            # Entire model object was saved
+            
             print("[INFO] Detected a full model file. Loading directly.")
             model = checkpoint
             model.to(self.device)
@@ -40,12 +40,12 @@ class PlantDiseaseModel:
             self._setup_transform()
             return
 
-        # ==== Build same model architecture ====
-        num_classes = 5  # 🔁 change if your training had more classes
+        
+        num_classes = 5  
         model = models.resnet50(weights=None)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
 
-        # ==== Load weights ====
+        
         try:
             model.load_state_dict(state_dict, strict=False)
         except Exception as e:
@@ -55,10 +55,10 @@ class PlantDiseaseModel:
         model.eval()
         self.model = model
 
-        # ==== Prepare image transform ====
+        
         self._setup_transform()
 
-        # Class names (update if needed)
+        
         self.class_names = ['Miner', 'Cercospora', 'Phoma', 'Rust', 'Health']
 
         print("[INFO] Model loaded and ready on", self.device)
@@ -92,7 +92,7 @@ class PlantDiseaseModel:
         }
 
 
-# ==== Singleton pattern ====
+
 _model_instance = None
 
 def get_model():

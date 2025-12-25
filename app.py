@@ -60,6 +60,7 @@ def predict_api():
 
 
 @app.route('/predict-page', methods=['POST'])
+@limiter.limit("10/minute")
 def predict_page():
     logger.info("predict-page endpoint called")
     
