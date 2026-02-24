@@ -9,3 +9,4 @@ python-multipart==0.0.9
 protobuf==5.28.3
 absl-py==2.1.0
 torch==2.5.1
+torchvision==0.20.1
