@@ -9,9 +9,19 @@ const URLs_TO_CACHE = [
   // add other static assets if needed
 ];
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(URLs_TO_CACHE))
+    caches.open('plant-disease-v1').then(cache => {
+      // addAll is all-or-nothing, so use individual adds instead
+
+      return Promise.allSettled(
+        URLs_TO_CACHE.map(url =>
+          cache.add(url).catch(err =>
+            console.warn(`Failed to cache ${url}:`, err)
+          )
+        )
+      );
+    })
   );
 });
 

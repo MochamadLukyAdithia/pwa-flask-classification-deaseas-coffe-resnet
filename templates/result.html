@@ -6,40 +6,108 @@
   <title>Hasil Deteksi Penyakit Tanaman</title>
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" content="#2b7a78">
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gradient-to-br from-teal-50 to-gray-100 text-gray-800 min-h-screen">
   <main class="min-h-screen flex items-center justify-center p-6">
-    <div class="bg-white shadow-lg rounded-2xl p-8 max-w-lg w-full">
-      <h1 class="text-2xl font-bold text-teal-600 mb-6 text-center">📊 Hasil Deteksi</h1>
+    <div class="bg-white shadow-2xl rounded-3xl p-8 max-w-xl w-full border border-gray-100">
+      <h1 class="text-3xl font-bold text-teal-600 mb-2 text-center">📊 Hasil Deteksi</h1>
+      <p class="text-gray-500 mb-6 text-center text-sm">Analisis penyakit daun tanaman</p>
 
-      <div class="text-center mb-6">
-        {% if label %}
-          <p class="text-lg"><strong class="text-teal-700">Prediksi:</strong> {{ label }}</p>
-          <p class="text-gray-600"><strong>Akurasi:</strong> {{ "%.2f"|format(confidence * 100) }}%</p>
-        {% else %}
-          <p class="text-gray-500">⚠️ Data prediksi tidak tersedia.</p>
+      {% if label %}
+
+        <!-- Annotated Image with Heatmap + BBox -->
+        {% if annotated_image %}
+        <div class="mb-6">
+          <h3 class="text-sm font-semibold text-gray-600 mb-2 text-center">🔬 Visualisasi Area Terdeteksi</h3>
+          <div class="relative rounded-xl overflow-hidden border-2 border-teal-100 shadow-md">
+            <img 
+              src="data:image/jpeg;base64,{{ annotated_image }}" 
+              alt="Annotated plant image with disease detection" 
+              class="w-full object-contain max-h-72"
+            />
+            <!-- Legend overlay -->
+            <div class="absolute bottom-2 left-2 flex items-center gap-1 bg-black/50 rounded-lg px-2 py-1">
+              <div class="w-3 h-3 rounded-sm border-2 border-red-400"></div>
+              <span class="text-white text-xs">Area penyakit</span>
+            </div>
+          </div>
+          {% if bbox %}
+          <p class="text-xs text-gray-400 mt-1 text-center">
+            BBox: [{{ bbox[0] }}, {{ bbox[1] }}, {{ bbox[2] }}, {{ bbox[3] }}] px
+          </p>
+          {% endif %}
+        </div>
         {% endif %}
-      </div>
 
-      {% if probabilities %}
-        <h3 class="text-lg font-semibold mb-3">Detail Probabilitas:</h3>
-        <ul class="space-y-2 text-sm">
-          {% for class_name, prob in probabilities.items() %}
-            <li class="flex justify-between bg-gray-50 p-2 rounded-md border">
-              <span>{{ class_name }}</span>
-              <span class="font-medium text-teal-600">{{ "%.2f"|format(prob) }}%</span>
-            </li>
-          {% endfor %}
-        </ul>
+        <!-- Prediction Result Card -->
+        <div class="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-2xl p-5 mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Prediksi Penyakit</p>
+              <p class="text-2xl font-bold text-teal-700 mt-0.5">{{ label }}</p>
+            </div>
+            <!-- Confidence badge -->
+            <div class="text-right">
+              <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Akurasi</p>
+              <p class="text-2xl font-bold 
+                {% if confidence * 100 >= 80 %}text-green-600
+                {% elif confidence * 100 >= 60 %}text-yellow-600
+                {% else %}text-red-500{% endif %}">
+                {{ "%.1f"|format(confidence * 100) }}%
+              </p>
+            </div>
+          </div>
+
+          <!-- Confidence bar -->
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="h-2 rounded-full transition-all duration-500
+              {% if confidence * 100 >= 80 %}bg-green-500
+              {% elif confidence * 100 >= 60 %}bg-yellow-500
+              {% else %}bg-red-400{% endif %}"
+              style="width: {{ '%.1f'|format(confidence * 100) }}%">
+            </div>
+          </div>
+        </div>
+
+        <!-- Top-5 Probabilities -->
+        {% if probabilities %}
+        <div class="mb-6">
+          <h3 class="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">📈 Detail Probabilitas</h3>
+          <div class="space-y-2">
+            {% for class_name, prob in probabilities.items() %}
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-24 flex-shrink-0 font-medium">{{ class_name }}</span>
+              <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                <div class="h-3 rounded-full transition-all duration-500
+                  {% if loop.first %}bg-teal-500{% else %}bg-gray-300{% endif %}"
+                  style="width: {{ '%.1f'|format(prob) }}%">
+                </div>
+              </div>
+              <span class="text-sm font-semibold 
+                {% if loop.first %}text-teal-600{% else %}text-gray-500{% endif %} w-14 text-right">
+                {{ "%.2f"|format(prob) }}%
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="text-center py-8">
+          <p class="text-4xl mb-3">⚠️</p>
+          <p class="text-gray-500 font-medium">Data prediksi tidak tersedia.</p>
+          <p class="text-gray-400 text-sm mt-1">Silakan coba upload ulang gambar daun.</p>
+        </div>
       {% endif %}
 
-      <div class="mt-8 text-center">
+      <!-- Back Button -->
+      <div class="mt-6 text-center">
         <a href="/" 
-           class="inline-block bg-teal-600 text-white py-2 px-6 rounded-lg shadow 
-                  hover:bg-teal-700 transition duration-200">
-          ⬅️ Kembali
+           class="inline-flex items-center gap-2 bg-teal-600 text-white py-2.5 px-7 rounded-xl shadow-lg 
+                  hover:bg-teal-700 hover:shadow-xl transition-all duration-200 font-semibold">
+          ⬅️ Deteksi Lagi
         </a>
       </div>
     </div>

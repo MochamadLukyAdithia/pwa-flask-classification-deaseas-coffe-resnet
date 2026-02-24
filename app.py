@@ -50,12 +50,15 @@ def predict_api():
         return jsonify({"error": "invalid image file"}), 400
 
     model = get_model()
-    result = model.predict(img)
+    generate_bbox = request.args.get("bbox", "true").lower() == "true"
+    result = model.predict(img, generate_bbox=generate_bbox)
 
     return jsonify({
         "label": result["label"],
         "confidence": round(result["confidence"] * 100, 2),
-        "top5": result["top5"]
+        "top5": result["top5"],
+        "bbox": result["bbox"],
+        "annotated_image": result["annotated_image"],
     })
 
 
@@ -63,32 +66,38 @@ def predict_api():
 @limiter.limit("10/minute")
 def predict_page():
     logger.info("predict-page endpoint called")
-    
+
     if 'image' not in request.files:
         logger.warning("No image file in request")
-        return render_template('result.html', label=None, confidence=0, probabilities=None)
+        return render_template('result.html', label=None, confidence=0,
+                               probabilities=None, bbox=None, annotated_image=None)
 
     file = request.files['image']
     if file.filename == '' or not allowed_file(file.filename):
         logger.warning(f"Invalid filename: {file.filename}")
-        return render_template('result.html', label=None, confidence=0, probabilities=None)
+        return render_template('result.html', label=None, confidence=0,
+                               probabilities=None, bbox=None, annotated_image=None)
 
     try:
-        img = Image.open(BytesIO(file.read())).convert("RGB")
+        image_bytes = file.read()
+        img = Image.open(BytesIO(image_bytes)).convert("RGB")
     except Exception as e:
         logger.error(f"Image processing error: {e}")
-        return render_template('result.html', label=None, confidence=0, probabilities=None)
+        return render_template('result.html', label=None, confidence=0,
+                               probabilities=None, bbox=None, annotated_image=None)
 
     model = get_model()
-    result = model.predict(img)
-    
-    logger.info(f"Prediction result: {result}")
+    result = model.predict(img, generate_bbox=True)
+
+    logger.info(f"Prediction result: label={result['label']}, bbox={result['bbox']}")
 
     return render_template(
         'result.html',
         label=result["label"],
         confidence=result["confidence"],
-        probabilities=result["top5"]
+        probabilities=result["top5"],
+        bbox=result["bbox"],
+        annotated_image=result["annotated_image"],
     )
 
 
